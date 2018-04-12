@@ -3,12 +3,14 @@ const bodyParser = require('body-parser');
 const crypto = require('crypto');
 
 const verifyWebhook = (req) => {
-  if (!req.headers['user-agent'].includes('Coding.net Hook')) {
+  const fromCoding = req.headers['user-agent'].includes('Coding.net Hook');
+  const fromGithub = req.headers['user-agent'].includes('GitHub-Hookshot');
+  if (!fromCoding && !fromGithub) {
     return false;
   }
   // Compare their hmac signature to our hmac signature
   // (hmac = hash-based message authentication code)
-  const theirSignature = req.headers['x-coding-signature'];
+  const theirSignature = req.headers['x-coding-signature'] || req.headers['x-hub-signature'];
   console.log(theirSignature);
   const payload = JSON.stringify(req.body);
   const secret = process.env.SECRET_TOKEN;
@@ -44,7 +46,8 @@ app.post('*', (req, res) => {
 
 app.all('*', notAuthorized); // Only webhook requests allowed at this address
 
-app.listen(3000);
+const port = process.env.PORT || 3000;
+app.listen(port);
 
-console.log('Webhook service running at http://localhost:3000');
+console.log(`Webhook service running at http://localhost:${port}`);
 
